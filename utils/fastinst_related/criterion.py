@@ -12,7 +12,7 @@ from detectron2.projects.point_rend.point_features import (
 from detectron2.utils.comm import get_world_size
 from torch import nn
 
-from ..utils.misc import is_dist_avail_and_initialized, nested_tensor_from_tensor_list
+from .misc import is_dist_avail_and_initialized, nested_tensor_from_tensor_list
 
 
 def dice_loss(
