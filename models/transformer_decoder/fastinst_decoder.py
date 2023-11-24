@@ -6,18 +6,16 @@ from torch import nn
 from torch.nn import functional as F
 
 from fastinst.utils.misc import nested_tensor_from_tensor_list
-from .utils import TRANSFORMER_DECODER_REGISTRY, QueryProposal, \
+from .utils import QueryProposal, \
     CrossAttentionLayer, SelfAttentionLayer, FFNLayer, MLP
 
 
-@TRANSFORMER_DECODER_REGISTRY.register()
 class FastInstDecoder(nn.Module):
 
     @configurable
     def __init__(
             self,
             in_channels,
-            *,
             num_classes: int,
             hidden_dim: int,
             num_queries: int,
@@ -97,26 +95,6 @@ class FastInstDecoder(nn.Module):
             self.class_embed_layers.append(MLP(hidden_dim, hidden_dim, num_classes + 1, 3))
             self.mask_embed_layers.append(MLP(hidden_dim, hidden_dim, mask_dim, 3))
             self.mask_features_layers.append(nn.Linear(hidden_dim, mask_dim))
-
-    @classmethod
-    def from_config(cls, cfg, in_channels, input_shape):
-        ret = {}
-        ret["in_channels"] = in_channels
-
-        ret["num_classes"] = cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES
-        ret["hidden_dim"] = cfg.MODEL.FASTINST.HIDDEN_DIM
-        ret["num_queries"] = cfg.MODEL.FASTINST.NUM_OBJECT_QUERIES
-        ret["num_aux_queries"] = cfg.MODEL.FASTINST.NUM_AUX_QUERIES
-        # Transformer parameters:
-        ret["nheads"] = cfg.MODEL.FASTINST.NHEADS
-        ret["dim_feedforward"] = cfg.MODEL.FASTINST.DIM_FEEDFORWARD
-
-        ret["dec_layers"] = cfg.MODEL.FASTINST.DEC_LAYERS
-        ret["pre_norm"] = cfg.MODEL.FASTINST.PRE_NORM
-
-        ret["mask_dim"] = cfg.MODEL.SEM_SEG_HEAD.MASK_DIM
-
-        return ret
 
     def forward(self, x, mask_features, targets=None):
         bs = x[0].shape[0]

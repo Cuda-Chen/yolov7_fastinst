@@ -2,23 +2,8 @@
 from typing import Optional
 
 import torch
-from detectron2.utils.registry import Registry
 from torch import nn, Tensor
 from torch.nn import functional as F
-
-TRANSFORMER_DECODER_REGISTRY = Registry("TRANSFORMER_MODULE")
-TRANSFORMER_DECODER_REGISTRY.__doc__ = """
-Registry for transformer module in FastInst.
-"""
-
-
-def build_transformer_decoder(cfg, in_channels, input_shape=None):
-    """
-    Build a instance embedding branch from `cfg.MODEL.INS_EMBED_HEAD.NAME`.
-    """
-    name = cfg.MODEL.FASTINST.TRANSFORMER_DECODER_NAME
-    return TRANSFORMER_DECODER_REGISTRY.get(name)(cfg, in_channels, input_shape)
-
 
 def _get_activation_fn(activation):
     """Return an activation function given a string"""
