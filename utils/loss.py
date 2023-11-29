@@ -93,7 +93,7 @@ class ComputeLoss:
 			else:
 				# remove this loss if not specified in `weight_dict`
 				losses.pop(k)
-		return losses  
+		return losses.sum() 
 
     def single_mask_loss(self, gt_mask, pred, proto, xyxy, area):
         # Mask loss for one image
