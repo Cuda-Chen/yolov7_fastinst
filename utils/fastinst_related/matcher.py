@@ -5,11 +5,19 @@ Modules to compute the matching cost and solve the corresponding LSAP.
 """
 import torch
 import torch.nn.functional as F
-from detectron2.projects.point_rend.point_features import point_sample
 from scipy.optimize import linear_sum_assignment
 from torch import nn
 from torch.cuda.amp import autocast
 
+def point_sample(input, point_coords, **kwargs): 
+    add_dim = False
+    if point_coords.dim() == 3:
+        add_dim = True
+        point_coords = point_coords.unsqueeze(2)
+    output = F.grid_sample(input, 2.0 * point_coords - 1.0, **kwargs)
+    if add_dim:
+        output = output.squeeze(3)
+    return output
 
 def batch_dice_loss(inputs: torch.Tensor, targets: torch.Tensor):
     """
