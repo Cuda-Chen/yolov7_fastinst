@@ -53,7 +53,8 @@ from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset, ch
 from utils.loggers import GenericLogger
 from utils.plots import plot_evolve, plot_labels
 from utils.segment.dataloaders import create_dataloader
-from utils.segment.loss import ComputeLoss
+#from utils.segment.loss import ComputeLoss
+from utils.loss import ComputeLoss
 from utils.segment.metrics import KEYS, fitness
 from utils.segment.plots import plot_images_and_masks, plot_results_with_masks
 from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
