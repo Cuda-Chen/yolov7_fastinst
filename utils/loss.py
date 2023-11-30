@@ -2,14 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..general import xywh2xyxy
-from ..loss import FocalLoss, smooth_BCE
-from ..metrics import bbox_iou
-from ..torch_utils import de_parallel
-from .general import crop
+from utils.general import xywh2xyxy
+from utils.metrics import bbox_iou
+from utils.torch_utils import de_parallel
+from utils.general import crop
+from utils.general import yaml_load
 
 from .modeling.criterion import SetCriterion
 from .modeling.matcher import HungarianMatcher
+
+FASTINST_CONFIG_DEFAULT_PATH = './cfg/Fast-COCO-InstanceSegmentation.yaml'
 
 class ComputeLoss:
     # Compute losses
@@ -43,8 +45,10 @@ class ComputeLoss:
         self.anchors = m.anchors
         self.device = device
 
-		# FastInst Transformer decoder
-		# loss weights
+        # FastInst Transformer decoder
+        # load FastInst config
+        cfg = yaml_load(FASTINST_CONFIG_DEFAULT_PATH)
+        # loss weights
         class_weight = cfg.MODEL.FASTINST.CLASS_WEIGHT
         dice_weight = cfg.MODEL.FASTINST.DICE_WEIGHT
         mask_weight = cfg.MODEL.FASTINST.MASK_WEIGHT
