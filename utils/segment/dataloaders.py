@@ -17,8 +17,6 @@ from ..general import LOGGER, xyn2xy, xywhn2xyxy, xyxy2xywhn
 from ..torch_utils import torch_distributed_zero_first
 from .augmentations import mixup, random_perspective
 
-RANK = int(os.getenv('RANK', -1))
-
 
 def create_dataloader(path,
                       imgsz,
@@ -39,7 +37,7 @@ def create_dataloader(path,
                       mask_downsample_ratio=1,
                       overlap_mask=False):
     if rect and shuffle:
-        LOGGER.warning('WARNING ⚠️ --rect is incompatible with DataLoader shuffle, setting shuffle=False')
+        LOGGER.warning('WARNING: --rect is incompatible with DataLoader shuffle, setting shuffle=False')
         shuffle = False
     with torch_distributed_zero_first(rank):  # init dataset *.cache only once if DDP
         dataset = LoadImagesAndLabelsAndMasks(
@@ -63,8 +61,8 @@ def create_dataloader(path,
     nw = min([os.cpu_count() // max(nd, 1), batch_size if batch_size > 1 else 0, workers])  # number of workers
     sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle)
     loader = DataLoader if image_weights else InfiniteDataLoader  # only DataLoader allows for attribute updates
-    generator = torch.Generator()
-    generator.manual_seed(6148914691236517205 + RANK)
+    # generator = torch.Generator()
+    # generator.manual_seed(0)
     return loader(
         dataset,
         batch_size=batch_size,
@@ -74,7 +72,7 @@ def create_dataloader(path,
         pin_memory=True,
         collate_fn=LoadImagesAndLabelsAndMasks.collate_fn4 if quad else LoadImagesAndLabelsAndMasks.collate_fn,
         worker_init_fn=seed_worker,
-        generator=generator,
+        # generator=generator,
     ), dataset
 
 
@@ -93,13 +91,12 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
         single_cls=False,
         stride=32,
         pad=0,
-        min_items=0,
         prefix="",
         downsample_ratio=1,
         overlap=False,
     ):
         super().__init__(path, img_size, batch_size, augment, hyp, rect, image_weights, cache_images, single_cls,
-                         stride, pad, min_items, prefix)
+                         stride, pad, prefix)
         self.downsample_ratio = downsample_ratio
         self.overlap = overlap
 
@@ -143,14 +140,17 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                 labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
 
             if self.augment:
-                img, labels, segments = random_perspective(img,
-                                                           labels,
-                                                           segments=segments,
-                                                           degrees=hyp["degrees"],
-                                                           translate=hyp["translate"],
-                                                           scale=hyp["scale"],
-                                                           shear=hyp["shear"],
-                                                           perspective=hyp["perspective"])
+                img, labels, segments = random_perspective(
+                    img,
+                    labels,
+                    segments=segments,
+                    degrees=hyp["degrees"],
+                    translate=hyp["translate"],
+                    scale=hyp["scale"],
+                    shear=hyp["shear"],
+                    perspective=hyp["perspective"],
+                    return_seg=True,
+                )
 
         nl = len(labels)  # number of labels
         if nl:
@@ -309,7 +309,7 @@ def polygons2masks(img_size, polygons, color, downsample_ratio=1):
 def polygons2masks_overlap(img_size, segments, downsample_ratio=1):
     """Return a (640, 640) overlap mask."""
     masks = np.zeros((img_size[0] // downsample_ratio, img_size[1] // downsample_ratio),
-                     dtype=np.int32 if len(segments) > 255 else np.uint8)
+            dtype=np.int32 if len(segments) > 255 else np.uint8)
     areas = []
     ms = []
     for si in range(len(segments)):
