@@ -59,12 +59,16 @@ class ComputeLoss:
         # FastInst Transformer decoder
         # load FastInst config
         cfg = yaml_load(FASTINST_CONFIG_DEFAULT_PATH)
+        fastinst_decoder_attrs = cfg['MODEL']['FASTINST']
+        # Loss parameters:
+        deep_supervision = fastinst_decoder_attrs['DEEP_SUPERVISION']
+        no_object_weight = fastinst_decoder_attrs['NO_OBJECT_WEIGHT']
         # loss weights
-        class_weight = cfg.MODEL.FASTINST.CLASS_WEIGHT
-        dice_weight = cfg.MODEL.FASTINST.DICE_WEIGHT
-        mask_weight = cfg.MODEL.FASTINST.MASK_WEIGHT
-        location_weight = cfg.MODEL.FASTINST.LOCATION_WEIGHT
-        proposal_weight = cfg.MODEL.FASTINST.PROPOSAL_WEIGHT
+        class_weight = fastinst_decoder_attrs['CLASS_WEIGHT']
+        dice_weight = fastinst_decoder_attrs['DICE_WEIGHT']
+        mask_weight = fastinst_decoder_attrs['MASK_WEIGHT']
+        location_weight = fastinst_decoder_attrs['LOCATION_WEIGHT']
+        proposal_weight = fastinst_decoder_attrs['PROPOSAL_WEIGHT']
 
         # building criterion
         matcher = HungarianMatcher(
@@ -72,7 +76,7 @@ class ComputeLoss:
             cost_mask=mask_weight,
             cost_dice=dice_weight,
             cost_location=location_weight,
-            num_points=cfg.MODEL.FASTINST.TRAIN_NUM_POINTS,
+            num_points=fastinst_decoder_attrs['TRAIN_NUM_POINTS'],
         )
 
         weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight}
@@ -81,14 +85,14 @@ class ComputeLoss:
         losses = ["labels", "masks"]
 
         criterion = SetCriterion(
-            sem_seg_head.num_classes,
+            self.nc,
             matcher=matcher,
             weight_dict=weight_dict,
             eos_coef=no_object_weight,
             losses=losses,
-            num_points=cfg.MODEL.FASTINST.TRAIN_NUM_POINTS,
-            oversample_ratio=cfg.MODEL.FASTINST.OVERSAMPLE_RATIO,
-            importance_sample_ratio=cfg.MODEL.FASTINST.IMPORTANCE_SAMPLE_RATIO,
+            num_points=fastinst_decoder_attrs['TRAIN_NUM_POINTS'],
+            oversample_ratio=fastinst_decoder_attrs['OVERSAMPLE_RATIO'],
+            importance_sample_ratio=fastinst_decoder_attrs['IMPORTANCE_SAMPLE_RATIO'],
         )
 
     def __call__(self, preds, targets, masks):  # predictions, targets, model

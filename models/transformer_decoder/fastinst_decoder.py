@@ -94,6 +94,13 @@ class FastInstDecoder(nn.Module):
             self.mask_embed_layers.append(MLP(hidden_dim, hidden_dim, mask_dim, 3))
             self.mask_features_layers.append(nn.Linear(hidden_dim, mask_dim))
 
+        # for yolov7 detection head
+        self.nl = dec_layers
+        self.na = 42
+        self.nc = num_classes
+        self.nm = 10
+        self.anchors = 42
+
     def forward(self, x, mask_features, targets=None):
         bs = x[0].shape[0]
         proposal_size = x[1].shape[-2:]
