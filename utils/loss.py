@@ -97,14 +97,12 @@ class ComputeLoss:
 
     def __call__(self, preds, targets, masks):  # predictions, targets, model
         # mask classification target
-        if "instances" in batched_inputs[0]:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs] # GT Mask
-            targets = self.prepare_targets(gt_instances, images)
-
-        outputs = self.sem_seg_head(features, targets)
+        #if "instances" in batched_inputs[0]:
+        #    gt_instances = [x["instances"].to(self.device) for x in batched_inputs] # GT Mask
+        #    targets = self.prepare_targets(gt_instances, images)
 
 		# bipartite matching-based loss
-        losses = self.criterion(outputs, targets)
+        losses = self.criterion(preds, targets)
 
         for k in list(losses.keys()):
             if k in self.criterion.weight_dict:
