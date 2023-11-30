@@ -133,5 +133,5 @@ head:
    [101, 1, Conv, [1024, 3, 1]],
 
    #[[102, 103, 104], 1, IV6Detect, [nc]],  # Detect(P3, P4, P5)
-   [[102, 103, 104], 1, FastInstDecoder, [3, nc, 256, 100, 8, 8, 1024, 1, False, 256]] # send to FastInst transformer decoder
+   [[102, 103, 104], 1, FastInstDecoder, [nc, 256, 100, 8, 8, 1024, 1, False, 256]] # send to FastInst transformer decoder
   ]

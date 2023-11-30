@@ -1,18 +1,16 @@
 import math
 
 import torch
-from detectron2.config import configurable
 from torch import nn
 from torch.nn import functional as F
 
-from fastinst.utils.misc import nested_tensor_from_tensor_list
+from .misc import nested_tensor_from_tensor_list
 from .utils import QueryProposal, \
     CrossAttentionLayer, SelfAttentionLayer, FFNLayer, MLP
 
 
 class FastInstDecoder(nn.Module):
 
-    @configurable
     def __init__(
             self,
             in_channels,

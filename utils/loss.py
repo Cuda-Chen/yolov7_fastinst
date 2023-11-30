@@ -5,17 +5,24 @@ import torch.nn.functional as F
 from utils.general import xywh2xyxy
 from utils.metrics import bbox_iou
 from utils.torch_utils import de_parallel
-from utils.general import crop
 from utils.general import yaml_load
 
-from .modeling.criterion import SetCriterion
-from .modeling.matcher import HungarianMatcher
+from utils.fastinst_related.criterion import SetCriterion
+from utils.fastinst_related.matcher import HungarianMatcher
 
 FASTINST_CONFIG_DEFAULT_PATH = './cfg/Fast-COCO-InstanceSegmentation.yaml'
 
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
     return 1.0 - 0.5 * eps, 0.5 * eps
+
+def crop(masks, boxes):
+    n, h, w = masks.shape
+    x1, y1, x2, y2 = torch.chunk(boxes[:, :, None], 4, 1)  # x1 shape(1,1,n)
+    r = torch.arange(w, device=masks.device, dtype=x1.dtype)[None, None, :]  # rows shape(1,w,1)
+    c = torch.arange(h, device=masks.device, dtype=x1.dtype)[None, :, None]  # cols shape(h,1,1)
+
+    return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
 
 class ComputeLoss:
     # Compute losses
@@ -69,7 +76,7 @@ class ComputeLoss:
         )
 
         weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight}
-		weight_dict.update({"loss_proposal": proposal_weight})
+        weight_dict.update({"loss_proposal": proposal_weight})
 
         losses = ["labels", "masks"]
 
@@ -85,23 +92,23 @@ class ComputeLoss:
         )
 
     def __call__(self, preds, targets, masks):  # predictions, targets, model
-       # mask classification target
-		if "instances" in batched_inputs[0]:
-			gt_instances = [x["instances"].to(self.device) for x in batched_inputs] # GT Mask
-			targets = self.prepare_targets(gt_instances, images)
+        # mask classification target
+        if "instances" in batched_inputs[0]:
+            gt_instances = [x["instances"].to(self.device) for x in batched_inputs] # GT Mask
+            targets = self.prepare_targets(gt_instances, images)
 
-		outputs = self.sem_seg_head(features, targets)
+        outputs = self.sem_seg_head(features, targets)
 
 		# bipartite matching-based loss
-		losses = self.criterion(outputs, targets)
+        losses = self.criterion(outputs, targets)
 
-		for k in list(losses.keys()):
-			if k in self.criterion.weight_dict:
-				losses[k] *= self.criterion.weight_dict[k]
-			else:
-				# remove this loss if not specified in `weight_dict`
-				losses.pop(k)
-		return losses.sum() 
+        for k in list(losses.keys()):
+            if k in self.criterion.weight_dict:
+                losses[k] *= self.criterion.weight_dict[k]
+            else:
+                # remove this loss if not specified in `weight_dict`
+                losses.pop(k)
+        return losses.sum() 
 
     def single_mask_loss(self, gt_mask, pred, proto, xyxy, area):
         # Mask loss for one image
